@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database for the application
+  postgres:
+    build:
+      context: ./postgres  # Use local folder for building the image
+    container_name: etat-vente-postgres
+    ports:
+      - 5435:5432
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: vente2
+    volumes:
+      - etat-vente-data:/var/lib/postgresql/data
+
+  # Back-end Spring Boot Application
+  spring:
+    build:
+      context: ./spring
+      args:
+        - GITLAB_TOKEN=glpat-ZMrDEKc-GwNPG-Vce3bL
+    container_name: etat-vente-back
+    depends_on:
+      - postgres
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/vente2
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+    ports:
+      - 8080:8080
+
+  # Front-end Angular Application
+  angular:
+    build:
+      context: ./angular
+      args:
+        - GITLAB_TOKEN=glpat-ZMrDEKc-GwNPG-Vce3bL
+    container_name: etat-vente-front
+    ports:
+      - 4200:4200
+
+volumes:
+  etat-vente-data:

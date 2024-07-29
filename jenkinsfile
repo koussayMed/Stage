@@ -1,0 +1,78 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKER_COMPOSE_FILE = 'docker-compose.yml'
+        GITLAB_TOKEN = credentials('gitlab-token')  // Store the GitLab token in Jenkins credentials
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                // Clone the repository
+                git branch: 'Stage_koussay', url: 'http://41.226.182.130:81/prestacode-stagaire/etat-vente.git'
+            }
+        }
+        
+        stage('Build Angular') {
+            steps {
+                script {
+                    dir('angular') {
+                        // Build Angular Docker image
+                        sh 'docker build --build-arg GITLAB_TOKEN=$GITLAB_TOKEN -t etat-vente-angular .'
+                    }
+                }
+            }
+        }
+        
+        stage('Build Spring') {
+            steps {
+                script {
+                    dir('spring') {
+                        // Build Spring Docker image
+                        sh 'docker build --build-arg GITLAB_TOKEN=$GITLAB_TOKEN -t etat-vente-spring .'
+                    }
+                }
+            }
+        }
+
+        stage('Build PostgreSQL') {
+            steps {
+                script {
+                    dir('postgres') {
+                        // Build PostgreSQL Docker image
+                        sh 'docker build -t etat-vente-postgres .'
+                    }
+                }
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                script {
+                    // Deploy services using Docker Compose
+                    sh 'docker-compose -f $DOCKER_COMPOSE_FILE up -d'
+                }
+            }
+        }
+
+        stage('Test') {
+            steps {
+                script {
+                    // Run your test commands here
+                    echo 'Running tests...'
+                    // Example: sh 'curl -f http://localhost:8080/actuator/health'
+                }
+            }
+        }
+        
+        stage('Cleanup') {
+            steps {
+                script {
+                    // Optionally clean up the environment
+                    sh 'docker-compose -f $DOCKER_COMPOSE_FILE down'
+                }
+            }
+        }
+    }
+}
